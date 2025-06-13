@@ -371,9 +371,11 @@ st.markdown("""
         width: 100%;
         height: 100%;
         background: linear-gradient(135deg, #1A202C 0%, #2A3B4C 100%); /* Dark blue gradient */
-        display: flex;
+        display: flex; /* Ensure flexbox for centering */
         justify-content: center;
         align-items: center;
+        flex-direction: column; /* Stack spinner and text vertically */
+        gap: 15px; /* Space between spinner and text */
         z-index: 9999;
         animation: fadeIn 0.5s ease-out;
     }
@@ -398,8 +400,8 @@ st.markdown("""
         border-radius: 50%;
         width: 40px;
         height: 40px;
-        animation: spin 1s linear infinite;
-        margin-right: 15px;
+        animation: spin 1s linear infinite; /* This line was crucial */
+        /* margin-right: 15px; Removed as flex-direction column with gap is better */
         opacity: 0;
         animation: fadeIn 0.5s ease-out forwards;
         animation-delay: 0.1s;
