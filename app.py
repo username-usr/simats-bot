@@ -21,9 +21,11 @@ import asyncio
 import glob
 import time
 
-GROQ_API_KEY = "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"
-GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYdXiBVg"
+# --- API Keys ---
+GROQ_API_KEY = "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" # Replace with your actual key or use st.secrets
+GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYXidBVg" # Replace with your actual key or use st.secrets
 
+# --- OCR and LLM Setup ---
 reader = easyocr.Reader(['en'])
 chat_model = ChatGroq(api_key=GROQ_API_KEY, model="llama-3.3-70b-versatile")
 
@@ -32,14 +34,14 @@ chat_template = ChatPromptTemplate.from_messages([
 
 **When responding, follow these guidelines:**
 1. **Humanize your tone**: Write as if you're explaining to a friend—use contractions ("you'll", "we've"), occasional humor, and relatable examples.
-   - *Example*: "Think of this like choosing between Netflix plans—but for courses!"
+    - *Example*: "Think of this like choosing between Netflix plans—but for courses!"
 2. **Structure for clarity**:
-   - Start with a **1-sentence summary**.
-   - Use **bullet points** for key details.
-   - Add a **real-world scenario** or analogy if helpful.
+    - Start with a **1-sentence summary**.
+    - Use **bullet points** for key details.
+    - Add a **real-world scenario** or analogy if helpful.
 3. **Adapt to the user**:
-   - If the question is formal (e.g., about deadlines), keep it professional.
-   - If casual (e.g., "What's campus life like?"), be conversational and don't tell i don't know or there is no information from the provided document.
+    - If the question is formal (e.g., about deadlines), keep it professional.
+    - If casual (e.g., "What's campus life like?"), be conversational and don't tell I don't know or there is no information from the provided document.
 
 **Avoid**:
 - Robotic phrases like "Based on the provided context..."
@@ -58,6 +60,7 @@ chat_template = ChatPromptTemplate.from_messages([
 """)
 ])
 
+# --- WebLoader with Image OCR ---
 class WebLoaderWithImageOCR(WebBaseLoader):
     def __init__(self, web_paths, *args, **kwargs):
         super().__init__(web_paths, *args, **kwargs)
@@ -111,14 +114,17 @@ class WebLoaderWithImageOCR(WebBaseLoader):
                 docs[i].page_content = combined_text
         return docs
 
-PDF_FOLDER = "data/pdfs" 
+PDF_FOLDER = "data/pdfs"
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False) # Suppress default Streamlit spinner
 def load_and_process_documents():
+    # Simulate loading delay for demonstration of custom loader
+    time.sleep(2)
+
     if not os.path.exists(PDF_FOLDER):
         os.makedirs(PDF_FOLDER)
         print(f"Created folder: {PDF_FOLDER}. Please add PDF files to this folder.")
-    
+
     pdf_files = glob.glob(f"{PDF_FOLDER}/*.pdf")
     if not pdf_files:
         print(f"No PDF files found in {PDF_FOLDER}. Proceeding with website data only.")
@@ -179,12 +185,12 @@ def load_and_process_documents():
     all_docs = pdf_docs + website_docs
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100, add_start_index=True)
     all_splits = text_splitter.split_documents(all_docs)
-        
+
     embedding_model = GoogleGenerativeAIEmbeddings(google_api_key=GOOGLE_API_KEY, model="models/embedding-001")
     vector_store = InMemoryVectorStore(embedding=embedding_model)
     vector_store.add_documents(documents=all_splits)
     retriever = vector_store.as_retriever()
-        
+
     print(f"Total sub-documents created: {len(all_splits)}")
     return retriever
 
@@ -222,15 +228,15 @@ def typewriter_effect(text, placeholder):
         time.sleep(0.02)  # Adjust speed as needed
     placeholder.markdown(displayed_text)
 
-# Set page config for better mobile experience
+# --- Streamlit App Setup ---
 st.set_page_config(
     page_title="SIMATS Chatbot",
-    page_icon="🎓",
+    page_icon="🎓", # Using an emoji here as direct icon integration can be complex without FontAwesome
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Modern CSS with glassmorphism and animations
+# --- Custom CSS for Dark Blue & Milk White, Glassmorphism, and Loading Screen ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -242,14 +248,14 @@ st.markdown("""
     }
     
     html, body, [data-testid="stApp"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #1A202C; /* Dark Blue Background */
         min-height: 100vh;
         font-family: 'Inter', sans-serif;
         overflow-x: hidden;
     }
     
     [data-testid="stAppViewContainer"] {
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.05); /* Slightly transparent white for glassmorphism */
         backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         max-width: 100vw;
@@ -260,28 +266,24 @@ st.markdown("""
     
     /* Header Styling */
     .main-header {
-        background: linear-gradient(135deg, rgba(16, 163, 127, 0.9), rgba(102, 126, 234, 0.9));
+        background: linear-gradient(135deg, #2A3B4C, #1A202C); /* Darker blue gradient */
         backdrop-filter: blur(20px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding: 20px 30px;
         text-align: center;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     }
     
     .header-title {
-        color: white;
+        color: #F8F8F8; /* Milk White */
         font-size: 2.5rem;
         font-weight: 700;
         margin: 0;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        background: linear-gradient(45deg, #fff, #e0e0e0);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
     }
     
     .header-subtitle {
-        color: rgba(255, 255, 255, 0.8);
+        color: rgba(248, 248, 248, 0.8); /* Slightly transparent Milk White */
         font-size: 1.1rem;
         margin-top: 5px;
         font-weight: 400;
@@ -312,16 +314,16 @@ st.markdown("""
     }
     
     [data-testid="chat-message-user"] {
-        background: linear-gradient(135deg, rgba(16, 163, 127, 0.8), rgba(72, 187, 120, 0.8)) !important;
-        color: white !important;
+        background: linear-gradient(135deg, #364F6B, #2A3B4C) !important; /* Dark Blue Shades */
+        color: #F8F8F8 !important; /* Milk White */
         margin-left: auto !important;
         margin-right: 0 !important;
         border-radius: 18px 18px 4px 18px !important;
     }
     
     [data-testid="chat-message-assistant"] {
-        background: rgba(255, 255, 255, 0.9) !important;
-        color: #2d3748 !important;
+        background: #F8F8F8 !important; /* Milk White */
+        color: #1A202C !important; /* Dark Blue */
         margin-left: 0 !important;
         margin-right: auto !important;
         border-radius: 18px 18px 18px 4px !important;
@@ -330,7 +332,7 @@ st.markdown("""
     
     /* Input Styling */
     .stChatInputContainer {
-        background: rgba(255, 255, 255, 0.1) !important;
+        background: rgba(255, 255, 255, 0.05) !important; /* Transparent white */
         backdrop-filter: blur(20px) !important;
         border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
         padding: 20px !important;
@@ -340,7 +342,7 @@ st.markdown("""
     }
     
     .stChatInput > div {
-        background: rgba(255, 255, 255, 0.9) !important;
+        background: #F8F8F8 !important; /* Milk White */
         border-radius: 25px !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
@@ -350,23 +352,80 @@ st.markdown("""
     .stChatInput input {
         background: transparent !important;
         border: none !important;
-        color: #2d3748 !important;
+        color: #1A202C !important; /* Dark Blue */
         font-size: 16px !important;
         padding: 12px 20px !important;
         font-weight: 400 !important;
     }
     
     .stChatInput input::placeholder {
-        color: #718096 !important;
+        color: #4A5568 !important; /* A slightly lighter dark blue */
         opacity: 0.8 !important;
     }
     
-    /* Spinner Styling */
-    .stSpinner > div {
-        border-color: rgba(16, 163, 127, 0.8) transparent transparent transparent !important;
+    /* Custom Loading Overlay */
+    #custom-loader-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #1A202C 0%, #2A3B4C 100%); /* Dark blue gradient */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.5s ease-out;
     }
     
-    /* Animations */
+    #custom-loader-overlay.fade-out {
+        animation: fadeOut 0.5s ease-in forwards;
+    }
+    
+    .loader-text {
+        font-size: 2rem;
+        font-weight: 600;
+        color: #F8F8F8; /* Milk White */
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        animation: textFadeIn 1s ease-in-out forwards;
+        animation-delay: 0.2s;
+    }
+
+    .loader-spinner {
+        border: 4px solid rgba(248, 248, 248, 0.3); /* Milk White transparent */
+        border-top: 4px solid #F8F8F8; /* Milk White solid */
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin-right: 15px;
+        opacity: 0;
+        animation: fadeIn 0.5s ease-out forwards;
+        animation-delay: 0.1s;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; display: none; }
+    }
+
+    @keyframes textFadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Animations for chat messages */
     @keyframes slideIn {
         from {
             opacity: 0;
@@ -389,7 +448,7 @@ st.markdown("""
     
     /* Welcome Message Styling */
     .welcome-message {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.8));
+        background: #F8F8F8; /* Milk White */
         border-radius: 18px;
         padding: 24px;
         margin: 20px auto;
@@ -399,21 +458,18 @@ st.markdown("""
         backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.2);
         animation: slideIn 0.8s ease-out;
+        color: #1A202C; /* Dark Blue text */
     }
     
     .welcome-title {
-        color: #2d3748;
+        color: #1A202C; /* Dark Blue */
         font-size: 1.8rem;
         font-weight: 600;
         margin-bottom: 12px;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
     }
     
     .welcome-text {
-        color: #4a5568;
+        color: #4A5568; /* Slightly lighter dark blue */
         font-size: 1.1rem;
         line-height: 1.6;
         margin-bottom: 16px;
@@ -428,9 +484,9 @@ st.markdown("""
     }
     
     .quick-question-btn {
-        background: linear-gradient(135deg, rgba(16, 163, 127, 0.1), rgba(72, 187, 120, 0.1));
-        border: 1px solid rgba(16, 163, 127, 0.3);
-        color: #2d3748;
+        background: rgba(42, 59, 76, 0.1); /* Transparent dark blue */
+        border: 1px solid rgba(42, 59, 76, 0.3);
+        color: #1A202C; /* Dark Blue */
         padding: 8px 16px;
         border-radius: 20px;
         font-size: 0.9rem;
@@ -440,9 +496,9 @@ st.markdown("""
     }
     
     .quick-question-btn:hover {
-        background: linear-gradient(135deg, rgba(16, 163, 127, 0.2), rgba(72, 187, 120, 0.2));
+        background: rgba(42, 59, 76, 0.2);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(16, 163, 127, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
     
     /* Mobile Responsiveness */
@@ -485,7 +541,7 @@ st.markdown("""
 # Custom header
 st.markdown("""
     <div class="main-header">
-        <h1 class="header-title">🎓 SIMATS Assistant</h1>
+        <h1 class="header-title">SIMATS Assistant</h1>
         <p class="header-subtitle">Your intelligent guide to Saveetha Institute of Medical and Technical Sciences</p>
     </div>
 """, unsafe_allow_html=True)
@@ -495,11 +551,33 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.first_visit = True
 
-# Load documents
-with st.spinner("🔄 Initializing AI Assistant..."):
-    retriever = load_and_process_documents()
+# --- Custom Loading Screen ---
+# This div will be shown initially and then hidden via JavaScript
+st.markdown("""
+    <div id="custom-loader-overlay">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Loading SIMATS data...</div>
+    </div>
+""", unsafe_allow_html=True)
 
-# Display welcome message only on first visit
+# Load documents with custom loader message
+retriever = load_and_process_documents()
+
+# JavaScript to hide the loading overlay after data is loaded
+st.markdown("""
+    <script>
+        const loader = document.getElementById('custom-loader-overlay');
+        if (loader) {
+            loader.classList.add('fade-out');
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500); // Match fadeOut animation duration
+        }
+    </script>
+""", unsafe_allow_html=True)
+
+
+# Display welcome message only on first visit and add to chat history
 if st.session_state.first_visit:
     st.markdown("""
         <div class="welcome-message">
@@ -509,31 +587,28 @@ if st.session_state.first_visit:
                 From admissions and courses to campus life and placements - just ask me anything!
             </p>
             <div class="quick-questions">
-                <span class="quick-question-btn">📚 What courses are offered?</span>
-                <span class="quick-question-btn">🏛️ Tell me about campus facilities</span>
-                <span class="quick-question-btn">💼 Placement opportunities</span>
-                <span class="quick-question-btn">📝 Admission process</span>
-                <span class="quick-question-btn">🏆 College rankings</span>
+                <span class="quick-question-btn">What courses are offered?</span>
+                <span class="quick-question-btn">Tell me about campus facilities</span>
+                <span class="quick-question-btn">Placement opportunities</span>
+                <span class="quick-question-btn">Admission process</span>
+                <span class="quick-question-btn">College rankings</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
     
-    # Add welcome message to chat history
-    welcome_msg = """Hi there! 👋 
+    welcome_msg_content = """Hi there! I'm your SIMATS Assistant, and I'm excited to help you explore everything about our college! Whether you're curious about:
 
-I'm your SIMATS Assistant, and I'm excited to help you explore everything about our college! Whether you're curious about:
-
-• 📚 **Academic programs** and specializations
-• 🏛️ **Campus facilities** and infrastructure  
-• 💼 **Placement opportunities** and career support
-• 📝 **Admission requirements** and procedures
-• 🏆 **Rankings and accreditations**
-• 🎯 **Research opportunities** and projects
-• 🏠 **Hostel life** and campus culture
+* **Academic programs** and specializations
+* **Campus facilities** and infrastructure  
+* **Placement opportunities** and career support
+* **Admission requirements** and procedures
+* **Rankings and accreditations**
+* **Research opportunities** and projects
+* **Hostel life** and campus culture
 
 Just ask me anything! I'm here to give you detailed, friendly answers about SIMATS. What would you like to know first?"""
     
-    st.session_state.messages.append({"role": "assistant", "content": welcome_msg})
+    st.session_state.messages.append({"role": "assistant", "content": welcome_msg_content})
     st.session_state.first_visit = False
 
 # Display chat messages
@@ -542,7 +617,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Chat input
-if prompt := st.chat_input("Ask me anything about SIMATS... 💬"):
+if prompt := st.chat_input("Ask me anything about SIMATS..."):
     # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -550,11 +625,13 @@ if prompt := st.chat_input("Ask me anything about SIMATS... 💬"):
 
     # Generate and display assistant response
     with st.chat_message("assistant"):
-        with st.spinner("🤔 Thinking..."):
-            response = get_college_info_sync(prompt, retriever)
+        # We removed the st.spinner and replaced it with a custom CSS loading effect
+        response_placeholder = st.empty() # Placeholder for typewriter effect
+        response_placeholder.markdown("<div class='typing-indicator'>Thinking...</div>", unsafe_allow_html=True) # Show thinking indicator
+        
+        response = get_college_info_sync(prompt, retriever)
         
         # Add typing effect
-        response_placeholder = st.empty()
         typewriter_effect(response, response_placeholder)
-        
+            
     st.session_state.messages.append({"role": "assistant", "content": response})
