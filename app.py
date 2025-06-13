@@ -25,7 +25,7 @@ GROQ_API_KEY = "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"
 GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYdXiBVg"
 
 reader = easyocr.Reader(['en'])
-chat_model = ChatGroq(api_key=GROQ_API_KEY, model="qwen-2.5-32b")
+chat_model = ChatGroq(api_key=GROQ_API_KEY, model="llama-3.3-70b-versatile")
 
 
 chat_template = ChatPromptTemplate.from_messages([
