@@ -19,16 +19,10 @@ from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplat
 import asyncio
 import glob
 import time
-from langchain_google_genai import GoogleGenerativeAIError
 
 # --- API Keys ---
-# Use Streamlit secrets for secure key management
-try:
-    GROQ_API_KEY = "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"
-    GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYdXiBVg"
-except KeyError as e:
-    st.error(f"Missing API key: {e}. Please configure API keys in Streamlit secrets.")
-    st.stop()
+GROQ_API_KEY = "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"
+GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYdXiBVg"  # Replace with your valid Google API key
 
 # --- OCR and LLM Setup ---
 reader = easyocr.Reader(['en'])
@@ -200,19 +194,21 @@ def load_and_process_documents():
         batch_size = 50
         for i in range(0, len(valid_splits), batch_size):
             batch = valid_splits[i:i + batch_size]
-            vector_store.add_documents(documents=batch)
-            time.sleep(1)  # Avoid rate limits
+            try:
+                vector_store.add_documents(documents=batch)
+                print(f"Processed batch {i//batch_size + 1}/{(len(valid_splits)//batch_size) + 1}")
+                time.sleep(1)  # Avoid rate limits
+            except Exception as e:
+                print(f"Error embedding batch {i//batch_size + 1}: {str(e)}")
+                st.error(f"Failed to embed documents: {str(e)}")
+                raise
 
         retriever = vector_store.as_retriever()
         print(f"Total sub-documents created: {len(valid_splits)}")
         return retriever
-    except GoogleGenerativeAIError as e:
-        print(f"Google API error: {str(e)}")
-        st.error(f"Failed to process documents due to Google API error: {str(e)}")
-        raise
     except Exception as e:
-        print(f"Unexpected error in document processing: {str(e)}")
-        st.error(f"Unexpected error in document processing: {str(e)}")
+        print(f"Error in document processing: {str(e)}")
+        st.error(f"Failed to process documents: {str(e)}")
         raise
 
 def format_docs(docs):
