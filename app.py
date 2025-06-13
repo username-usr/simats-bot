@@ -19,7 +19,7 @@ from langchain_core.messages import SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 import asyncio
 import glob
-
+import time
 
 GROQ_API_KEY = "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"
 GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYdXiBVg"
@@ -27,12 +27,11 @@ GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYdXiBVg"
 reader = easyocr.Reader(['en'])
 chat_model = ChatGroq(api_key=GROQ_API_KEY, model="llama-3.3-70b-versatile")
 
-
 chat_template = ChatPromptTemplate.from_messages([
     SystemMessage(content="""You are a friendly and knowledgeable assistant who provides clear and engaging information about SIMATS engineering college. You have access to official college documents.
 
 **When responding, follow these guidelines:**
-1. **Humanize your tone**: Write as if you’re explaining to a friend—use contractions ("you’ll", "we’ve"), occasional humor, and relatable examples.
+1. **Humanize your tone**: Write as if you're explaining to a friend—use contractions ("you'll", "we've"), occasional humor, and relatable examples.
    - *Example*: "Think of this like choosing between Netflix plans—but for courses!"
 2. **Structure for clarity**:
    - Start with a **1-sentence summary**.
@@ -40,7 +39,7 @@ chat_template = ChatPromptTemplate.from_messages([
    - Add a **real-world scenario** or analogy if helpful.
 3. **Adapt to the user**:
    - If the question is formal (e.g., about deadlines), keep it professional.
-   - If casual (e.g., “What’s campus life like?”), be conversational and don't tell i don't know or there is no information from the provided document.
+   - If casual (e.g., "What's campus life like?"), be conversational and don't tell i don't know or there is no information from the provided document.
 
 **Avoid**:
 - Robotic phrases like "Based on the provided context..."
@@ -52,10 +51,10 @@ chat_template = ChatPromptTemplate.from_messages([
 **Question**: {question}
 
 **Task**: Craft a response that:
-1. Starts with a **hook** (e.g., “Great question!” or “Let’s break this down...”).
+1. Starts with a **hook** (e.g., "Great question!" or "Let's break this down...").
 2. Answers *all* parts of the question with **blended context** (no copy-paste).
-3. Uses **examples** (e.g., “For instance, last year a student...”).
-4. Ends with:
+3. Uses **examples** (e.g., "For instance, last year a student...").
+4. Ends with a helpful note or suggestion.
 """)
 ])
 
@@ -113,7 +112,7 @@ class WebLoaderWithImageOCR(WebBaseLoader):
         return docs
 
 PDF_FOLDER = "data/pdfs" 
-# Cache document loading and vector store creation
+
 @st.cache_resource
 def load_and_process_documents():
     if not os.path.exists(PDF_FOLDER):
@@ -125,87 +124,48 @@ def load_and_process_documents():
         print(f"No PDF files found in {PDF_FOLDER}. Proceeding with website data only.")
 
     website_urls = [
-    "https://simatsengineering.com/",
-    "https://simatsengineering.com/simats-accreditations",
-    "https://collegedunia.com/college/56310-saveetha-school-of-engineering-sse-chennai",
-    "https://sites.google.com/saveetha.com/dmc/list-of-faculty",
-    "https://simatsengineering.com/profile",
-    "https://in.linkedin.com/school/saveetha-school-of-engineering/",
-    "https://simatsengineering.com/incubation-centre",
-    "https://simatsengineering.com/research-new",
-    "https://simatsengineering.com/profile",
-    "https://simatsengineering.com/infrastructure",
-    "https://simatsengineering.com/best-practices",
-    "https://drive.google.com/file/d/1u90Awzw6iLUs-pxQdjUB9jyf2taojX-j/view",
-    "https://www.saveetha.com/mediacoverage",
-    "https://www.saveetha.com/ins",
-    "https://www.saveetha.com/policies",
-    "https://simatsengineering.com/computer",
-    "https://simatsengineering.com/cse-programs",
-    "https://simatsengineering.com/cse-facilities",
-    "https://simatsengineering.com/cse-research",
-    "https://simatsengineering.com/office-of-international-affairs",
-    "https://simatsengineering.com/cse-faculty",
-    "https://simatsengineering.com/ece-1",
-    "https://simatsengineering.com/eee",
-    "https://simatsengineering.com/biomedical",
-    "https://simatsengineering.com/new-page-28",
-    "https://simatsengineering.com/bioinformatics-1",
-    "https://simatsengineering.com/energy-and-environmental",
-    "https://simatsengineering.com/mechanical",
-    "https://simatsengineering.com/pageit",
-    "https://simatsengineering.com/agriculture",
-    "https://simatsengineering.com/ai-ml",
-    "https://simatsengineering.com/automobile",
-    "https://simatsengineering.com/biotechnology",
-    "https://simatsengineering.com/civil",
-    "https://sites.google.com/saveetha.com/sseappliedmachinelearning/home?pli=1",
-    "https://sites.google.com/saveetha.com/department-of-physical-science/home",
-    "https://sites.google.com/saveetha.com/simatssc/home",
-    "https://simatsengineering.com/ai-ds",
-    "https://simatsengineering.com/admissions",
-    "https://simatsengineering.com/placement",
-    "https://simatsengineering.com/iic",
-    "https://simatsengineering.com/news-1",
-    "https://simatsengineering.com/contact-us",
-    "https://sites.google.com/saveetha.com/dmc/research?authuser=0",
-    "https://scholar.google.co.in/citations?user=mcDa3D4AAAAJ&hl=en",
-    "https://scholar.google.co.jp/citations?user=AQszbw4AAAAJ&hl=en",
-    "https://scholar.google.co.jp/citations?user=VtgK7_oAAAAJ&hl=en",
-    "https://sites.google.com/saveetha.com/dmc/research-scholar?authuser=0",
-    "https://sites.google.com/saveetha.com/dmc/publications?authuser=0",
-    "https://sites.google.com/saveetha.com/dmc/patents?authuser=0",
-    "https://sites.google.com/saveetha.com/dmc/events?authuser=0",
-    "https://sites.google.com/saveetha.com/dmc/contact-us?authuser=0",
-    "https://sites.google.com/saveetha.com/dmc/home?authuser=0",
-    "https://www.collegebatch.com/12013-saveetha-school-of-engineering-faculty-profiles-chennai",
-    "https://www.collegebatch.com/12013-saveetha-school-of-engineering-fees-structure-courses-chennai",
-    "https://www.collegebatch.com/12013-saveetha-school-of-engineering-placements-chennai",
-    "https://www.collegebatch.com/12013-saveetha-school-of-engineering-hostel-fees-facilities-chennai",
-    "https://www.collegebatch.com/12013-saveetha-school-of-engineering-contact-number-address-map-chennai",
-    "https://www.collegebatch.com/12013-saveetha-school-of-engineering-reviews",
-    "https://www.collegebatch.com/12013-saveetha-school-of-engineering-in-chennai",
-    "https://www.knowafest.com/explore/college/Saveetha_Institute_of_Medical_and_Technical_Sciences_Engineering",
-    "https://www.knowafest.com/explore/events/2025/03/0721-biociencia-2k25-saveetha-institute-medical-technical-sciences-engineering-national-conference-chennai",
-    "https://www.knowafest.com/explore/events/2025/02/2709-minnal-25-saveetha-institute-medical-technical-sciences-engineering-national-level-symposium-chennai",
-    "https://www.knowafest.com/explore/events/2025/02/1513-international-conference-neural-evolution-adaptive-intelligence-2025-saveetha-institute-medical-technical-sciences-engineering-chennai",
-    "https://www.knowafest.com/explore/events/2025/01/2609-cricket-clash-smash-twenty-challenge-2025-saveetha-institute-medical-technical-sciences-engineering-inter-intra-college-competition-chennai",
-    "https://simatsengineering.com/collaborations",
-    "https://simatsengineering.com/news",
-    "https://mmtechitservices.net/publications-in-database/",
-    "https://mmtechitservices.net/research-lab/",
-    "https://mmtechitservices.net/placement-training/",
-    "https://mmtechitservices.net/campus-placements/",
-    "https://mmtechitservices.net/internship/",
-    "https://mmtechitservices.net/international-visiting-faculties/",
-    "https://mmtechitservices.net/international-mou/",
-    "https://mmtechitservices.net/stepup-saveetha-innovation-incubation-cell/",
-    "https://mmtechitservices.net/companies-under-incubation/",
-    "https://mmtechitservices.net/our-profile/",
-    "https://mmtechitservices.net/our-services/",
-    "https://www.saveetha.com/sports-and-cultural-facilities",
-
-]
+        "https://simatsengineering.com/",
+        "https://simatsengineering.com/simats-accreditations",
+        "https://collegedunia.com/college/56310-saveetha-school-of-engineering-sse-chennai",
+        "https://sites.google.com/saveetha.com/dmc/list-of-faculty",
+        "https://simatsengineering.com/profile",
+        "https://in.linkedin.com/school/saveetha-school-of-engineering/",
+        "https://simatsengineering.com/incubation-centre",
+        "https://simatsengineering.com/research-new",
+        "https://simatsengineering.com/infrastructure",
+        "https://simatsengineering.com/best-practices",
+        "https://www.saveetha.com/mediacoverage",
+        "https://www.saveetha.com/ins",
+        "https://www.saveetha.com/policies",
+        "https://simatsengineering.com/computer",
+        "https://simatsengineering.com/cse-programs",
+        "https://simatsengineering.com/cse-facilities",
+        "https://simatsengineering.com/cse-research",
+        "https://simatsengineering.com/office-of-international-affairs",
+        "https://simatsengineering.com/cse-faculty",
+        "https://simatsengineering.com/ece-1",
+        "https://simatsengineering.com/eee",
+        "https://simatsengineering.com/biomedical",
+        "https://simatsengineering.com/new-page-28",
+        "https://simatsengineering.com/bioinformatics-1",
+        "https://simatsengineering.com/energy-and-environmental",
+        "https://simatsengineering.com/mechanical",
+        "https://simatsengineering.com/pageit",
+        "https://simatsengineering.com/agriculture",
+        "https://simatsengineering.com/ai-ml",
+        "https://simatsengineering.com/automobile",
+        "https://simatsengineering.com/biotechnology",
+        "https://simatsengineering.com/civil",
+        "https://simatsengineering.com/ai-ds",
+        "https://simatsengineering.com/admissions",
+        "https://simatsengineering.com/placement",
+        "https://simatsengineering.com/iic",
+        "https://simatsengineering.com/news-1",
+        "https://simatsengineering.com/contact-us",
+        "https://simatsengineering.com/collaborations",
+        "https://simatsengineering.com/news",
+        "https://www.saveetha.com/sports-and-cultural-facilities",
+    ]
 
     pdf_docs = [doc for pdf in pdf_files for doc in PyPDFLoader(pdf).load()]
     website_docs = []
@@ -228,7 +188,6 @@ def load_and_process_documents():
     print(f"Total sub-documents created: {len(all_splits)}")
     return retriever
 
-# Helper functions
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
@@ -247,7 +206,6 @@ async def get_college_info(question, retriever):
     except Exception as e:
         return f"An error occurred: {str(e)}"
 
-# Synchronous wrapper for async function
 def get_college_info_sync(question, retriever):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -255,85 +213,348 @@ def get_college_info_sync(question, retriever):
     loop.close()
     return result
 
-# Minimal CSS with WhatsApp-like design and wider container
+def typewriter_effect(text, placeholder):
+    """Create a typewriter effect for text"""
+    displayed_text = ""
+    for char in text:
+        displayed_text += char
+        placeholder.markdown(displayed_text + "▌")
+        time.sleep(0.02)  # Adjust speed as needed
+    placeholder.markdown(displayed_text)
+
+# Set page config for better mobile experience
+st.set_page_config(
+    page_title="SIMATS Chatbot",
+    page_icon="🎓",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# Modern CSS with glassmorphism and animations
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
     html, body, [data-testid="stApp"] {
-        background-color: #202123 !important;
-        color: #D9D9D9 !important;
-        font-family: 'Roboto', sans-serif !important;
-        margin: 0 !important;
-        padding: 0 !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        font-family: 'Inter', sans-serif;
+        overflow-x: hidden;
     }
+    
     [data-testid="stAppViewContainer"] {
-        max-width: 100vw !important;  /* Increased from 800px to 1200px to reduce empty space */
-        margin: 0 auto !important;    /* Center the container */
-        height: 100vh !important;
-        background-color: #202123 !important;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        max-width: 100vw;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
     }
-    h1 {
-        background-color: #10A37F !important;
-        color: #D9D9D9 !important;
-        padding: 10px 15px !important;
-        margin: 0 !important;
-        font-size: 30px !important;
-        text-align: left !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
+    
+    /* Header Styling */
+    .main-header {
+        background: linear-gradient(135deg, rgba(16, 163, 127, 0.9), rgba(102, 126, 234, 0.9));
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 20px 30px;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
+    
+    .header-title {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        background: linear-gradient(45deg, #fff, #e0e0e0);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .header-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.1rem;
+        margin-top: 5px;
+        font-weight: 400;
+    }
+    
+    /* Chat Container */
+    .chat-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        height: calc(100vh - 120px);
+        overflow-y: auto;
+    }
+    
+    /* Message Styling */
     .stChatMessage {
-        padding: 10px 15px !important;
-        margin: 5px 5px !important;
-        font-size: 24px !important;
-        border-radius: 10px !important;
-        max-width: 95% !important;
+        padding: 16px 20px !important;
+        margin: 12px 0 !important;
+        border-radius: 18px !important;
+        max-width: 85% !important;
         word-wrap: break-word !important;
+        font-size: 16px !important;
+        line-height: 1.5 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+        animation: slideIn 0.3s ease-out !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
-    .stChatMessage.user {
-        background-color: #343541 !important;
+    
+    [data-testid="chat-message-user"] {
+        background: linear-gradient(135deg, rgba(16, 163, 127, 0.8), rgba(72, 187, 120, 0.8)) !important;
+        color: white !important;
         margin-left: auto !important;
+        margin-right: 0 !important;
+        border-radius: 18px 18px 4px 18px !important;
     }
-    .stChatMessage.assistant {
-        background-color: #444654 !important;
+    
+    [data-testid="chat-message-assistant"] {
+        background: rgba(255, 255, 255, 0.9) !important;
+        color: #2d3748 !important;
+        margin-left: 0 !important;
         margin-right: auto !important;
+        border-radius: 18px 18px 18px 4px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
     }
-    .stTextInput > div > input {
-        background-color: #343541 !important;
-        color: #D9D9D9 !important;
+    
+    /* Input Styling */
+    .stChatInputContainer {
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(20px) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 20px !important;
+        position: sticky !important;
+        bottom: 0 !important;
+        z-index: 100 !important;
+    }
+    
+    .stChatInput > div {
+        background: rgba(255, 255, 255, 0.9) !important;
+        border-radius: 25px !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+        backdrop-filter: blur(10px) !important;
+    }
+    
+    .stChatInput input {
+        background: transparent !important;
         border: none !important;
-        border-radius: 20px !important;
-        padding: 10px 15px !important;
-        font-size: 28px !important;
-        width: calc(100% - 20px) !important;
-        margin: 10px 10px !important;
+        color: #2d3748 !important;
+        font-size: 16px !important;
+        padding: 12px 20px !important;
+        font-weight: 400 !important;
     }
+    
+    .stChatInput input::placeholder {
+        color: #718096 !important;
+        opacity: 0.8 !important;
+    }
+    
+    /* Spinner Styling */
     .stSpinner > div {
-        border-color: #10A37F transparent transparent transparent !important;
+        border-color: rgba(16, 163, 127, 0.8) transparent transparent transparent !important;
     }
+    
+    /* Animations */
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    
+    .typing-indicator {
+        animation: pulse 1.5s infinite;
+    }
+    
+    /* Welcome Message Styling */
+    .welcome-message {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.8));
+        border-radius: 18px;
+        padding: 24px;
+        margin: 20px auto;
+        max-width: 80%;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        animation: slideIn 0.8s ease-out;
+    }
+    
+    .welcome-title {
+        color: #2d3748;
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .welcome-text {
+        color: #4a5568;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 16px;
+    }
+    
+    .quick-questions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        margin-top: 16px;
+    }
+    
+    .quick-question-btn {
+        background: linear-gradient(135deg, rgba(16, 163, 127, 0.1), rgba(72, 187, 120, 0.1));
+        border: 1px solid rgba(16, 163, 127, 0.3);
+        color: #2d3748;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .quick-question-btn:hover {
+        background: linear-gradient(135deg, rgba(16, 163, 127, 0.2), rgba(72, 187, 120, 0.2));
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 163, 127, 0.2);
+    }
+    
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .header-title {
+            font-size: 2rem;
+        }
+        
+        .chat-container {
+            padding: 10px;
+        }
+        
+        .stChatMessage {
+            max-width: 95% !important;
+            font-size: 14px !important;
+        }
+        
+        .welcome-message {
+            max-width: 95%;
+            padding: 20px;
+        }
+        
+        .welcome-title {
+            font-size: 1.5rem;
+        }
+        
+        .welcome-text {
+            font-size: 1rem;
+        }
+    }
+    
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
     </style>
 """, unsafe_allow_html=True)
 
-# Main UI
-retriever = load_and_process_documents()
+# Custom header
+st.markdown("""
+    <div class="main-header">
+        <h1 class="header-title">🎓 SIMATS Assistant</h1>
+        <p class="header-subtitle">Your intelligent guide to Saveetha Institute of Medical and Technical Sciences</p>
+    </div>
+""", unsafe_allow_html=True)
 
-st.title("SIMATS Chatbot")
-
+# Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
+    st.session_state.first_visit = True
 
+# Load documents
+with st.spinner("🔄 Initializing AI Assistant..."):
+    retriever = load_and_process_documents()
+
+# Display welcome message only on first visit
+if st.session_state.first_visit:
+    st.markdown("""
+        <div class="welcome-message">
+            <h2 class="welcome-title">👋 Welcome to SIMATS!</h2>
+            <p class="welcome-text">
+                I'm here to help you discover everything about Saveetha Institute of Medical and Technical Sciences. 
+                From admissions and courses to campus life and placements - just ask me anything!
+            </p>
+            <div class="quick-questions">
+                <span class="quick-question-btn">📚 What courses are offered?</span>
+                <span class="quick-question-btn">🏛️ Tell me about campus facilities</span>
+                <span class="quick-question-btn">💼 Placement opportunities</span>
+                <span class="quick-question-btn">📝 Admission process</span>
+                <span class="quick-question-btn">🏆 College rankings</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Add welcome message to chat history
+    welcome_msg = """Hi there! 👋 
+
+I'm your SIMATS Assistant, and I'm excited to help you explore everything about our college! Whether you're curious about:
+
+• 📚 **Academic programs** and specializations
+• 🏛️ **Campus facilities** and infrastructure  
+• 💼 **Placement opportunities** and career support
+• 📝 **Admission requirements** and procedures
+• 🏆 **Rankings and accreditations**
+• 🎯 **Research opportunities** and projects
+• 🏠 **Hostel life** and campus culture
+
+Just ask me anything! I'm here to give you detailed, friendly answers about SIMATS. What would you like to know first?"""
+    
+    st.session_state.messages.append({"role": "assistant", "content": welcome_msg})
+    st.session_state.first_visit = False
+
+# Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask about SIMATS..."):
+# Chat input
+if prompt := st.chat_input("Ask me anything about SIMATS... 💬"):
+    # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # Generate and display assistant response
     with st.chat_message("assistant"):
-        with st.spinner(""):
+        with st.spinner("🤔 Thinking..."):
             response = get_college_info_sync(prompt, retriever)
-        st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        
+        # Add typing effect
+        response_placeholder = st.empty()
+        typewriter_effect(response, response_placeholder)
+        
+    st.session_state.messages.append({"role": "assistant", "content": response})
