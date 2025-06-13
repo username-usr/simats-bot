@@ -1,6 +1,5 @@
 import streamlit as st
 import bs4
-from langchain import hub
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -20,10 +19,16 @@ from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplat
 import asyncio
 import glob
 import time
+from langchain_google_genai import GoogleGenerativeAIError
 
 # --- API Keys ---
-GROQ_API_KEY = "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"  # Replace with your actual key
-GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYXidBVg"  # Replace with your actual key
+# Use Streamlit secrets for secure key management
+try:
+    GROQ_API_KEY = "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"
+    GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYdXiBVg"
+except KeyError as e:
+    st.error(f"Missing API key: {e}. Please configure API keys in Streamlit secrets.")
+    st.stop()
 
 # --- OCR and LLM Setup ---
 reader = easyocr.Reader(['en'])
@@ -118,78 +123,97 @@ PDF_FOLDER = "data/pdfs"
 
 @st.cache_resource
 def load_and_process_documents():
-    if not os.path.exists(PDF_FOLDER):
-        os.makedirs(PDF_FOLDER)
-        print(f"Created folder: {PDF_FOLDER}. Please add PDF files to this folder.")
+    try:
+        if not os.path.exists(PDF_FOLDER):
+            os.makedirs(PDF_FOLDER)
+            print(f"Created folder: {PDF_FOLDER}. Please add PDF files to this folder.")
 
-    pdf_files = glob.glob(f"{PDF_FOLDER}/*.pdf")
-    if not pdf_files:
-        print(f"No PDF files found in {PDF_FOLDER}. Proceeding with website data only.")
+        pdf_files = glob.glob(f"{PDF_FOLDER}/*.pdf")
+        if not pdf_files:
+            print(f"No PDF files found in {PDF_FOLDER}. Proceeding with website data only.")
 
-    website_urls = [
-        "https://simatsengineering.com/",
-        "https://simatsengineering.com/simats-accreditations",
-        "https://collegedunia.com/college/56310-saveetha-school-of-engineering-sse-chennai",
-        "https://sites.google.com/saveetha.com/dmc/list-of-faculty",
-        "https://simatsengineering.com/profile",
-        "https://in.linkedin.com/school/saveetha-school-of-engineering/",
-        "https://simatsengineering.com/incubation-centre",
-        "https://simatsengineering.com/research-new",
-        "https://simatsengineering.com/infrastructure",
-        "https://simatsengineering.com/best-practices",
-        "https://www.saveetha.com/mediacoverage",
-        "https://www.saveetha.com/ins",
-        "https://www.saveetha.com/policies",
-        "https://simatsengineering.com/computer",
-        "https://simatsengineering.com/cse-programs",
-        "https://simatsengineering.com/cse-facilities",
-        "https://simatsengineering.com/cse-research",
-        "https://simatsengineering.com/office-of-international-affairs",
-        "https://simatsengineering.com/cse-faculty",
-        "https://simatsengineering.com/ece-1",
-        "https://simatsengineering.com/eee",
-        "https://simatsengineering.com/biomedical",
-        "https://simatsengineering.com/new-page-28",
-        "https://simatsengineering.com/bioinformatics-1",
-        "https://simatsengineering.com/energy-and-environmental",
-        "https://simatsengineering.com/mechanical",
-        "https://simatsengineering.com/pageit",
-        "https://simatsengineering.com/agriculture",
-        "https://simatsengineering.com/ai-ml",
-        "https://simatsengineering.com/automobile",
-        "https://simatsengineering.com/biotechnology",
-        "https://simatsengineering.com/civil",
-        "https://simatsengineering.com/ai-ds",
-        "https://simatsengineering.com/admissions",
-        "https://simatsengineering.com/placement",
-        "https://simatsengineering.com/iic",
-        "https://simatsengineering.com/news-1",
-        "https://simatsengineering.com/contact-us",
-        "https://simatsengineering.com/collaborations",
-        "https://simatsengineering.com/news",
-        "https://www.saveetha.com/sports-and-cultural-facilities",
-    ]
+        website_urls = [
+            "https://simatsengineering.com/",
+            "https://simatsengineering.com/simats-accreditations",
+            "https://collegedunia.com/college/56310-saveetha-school-of-engineering-sse-chennai",
+            "https://sites.google.com/saveetha.com/dmc/list-of-faculty",
+            "https://simatsengineering.com/profile",
+            "https://in.linkedin.com/school/saveetha-school-of-engineering/",
+            "https://simatsengineering.com/incubation-centre",
+            "https://simatsengineering.com/research-new",
+            "https://simatsengineering.com/infrastructure",
+            "https://simatsengineering.com/best-practices",
+            "https://www.saveetha.com/mediacoverage",
+            "https://www.saveetha.com/ins",
+            "https://www.saveetha.com/policies",
+            "https://simatsengineering.com/computer",
+            "https://simatsengineering.com/cse-programs",
+            "https://simatsengineering.com/cse-facilities",
+            "https://simatsengineering.com/cse-research",
+            "https://simatsengineering.com/office-of-international-affairs",
+            "https://simatsengineering.com/cse-faculty",
+            "https://simatsengineering.com/ece-1",
+            "https://simatsengineering.com/eee",
+            "https://simatsengineering.com/biomedical",
+            "https://simatsengineering.com/new-page-28",
+            "https://simatsengineering.com/bioinformatics-1",
+            "https://simatsengineering.com/energy-and-environmental",
+            "https://simatsengineering.com/mechanical",
+            "https://simatsengineering.com/pageit",
+            "https://simatsengineering.com/agriculture",
+            "https://simatsengineering.com/ai-ml",
+            "https://simatsengineering.com/automobile",
+            "https://simatsengineering.com/biotechnology",
+            "https://simatsengineering.com/civil",
+            "https://simatsengineering.com/ai-ds",
+            "https://simatsengineering.com/admissions",
+            "https://simatsengineering.com/placement",
+            "https://simatsengineering.com/iic",
+            "https://simatsengineering.com/news-1",
+            "https://simatsengineering.com/contact-us",
+            "https://simatsengineering.com/collaborations",
+            "https://simatsengineering.com/news",
+            "https://www.saveetha.com/sports-and-cultural-facilities",
+        ]
 
-    pdf_docs = [doc for pdf in pdf_files for doc in PyPDFLoader(pdf).load()]
-    website_docs = []
-    for url in website_urls:
-        try:
-            loader = WebLoaderWithImageOCR(web_paths=(url,))
-            website_docs.extend(loader.load())
-        except Exception as e:
-            print(f"Error loading {url}: {e}")
+        pdf_docs = [doc for pdf in pdf_files for doc in PyPDFLoader(pdf).load()]
+        website_docs = []
+        for url in website_urls:
+            try:
+                loader = WebLoaderWithImageOCR(web_paths=(url,))
+                website_docs.extend(loader.load())
+            except Exception as e:
+                print(f"Error loading {url}: {e}")
 
-    all_docs = pdf_docs + website_docs
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100, add_start_index=True)
-    all_splits = text_splitter.split_documents(all_docs)
+        all_docs = pdf_docs + website_docs
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100, add_start_index=True)
+        all_splits = text_splitter.split_documents(all_docs)
 
-    embedding_model = GoogleGenerativeAIEmbeddings(google_api_key=GOOGLE_API_KEY, model="models/embedding-001")
-    vector_store = InMemoryVectorStore(embedding=embedding_model)
-    vector_store.add_documents(documents=all_splits)
-    retriever = vector_store.as_retriever()
+        # Filter valid documents
+        valid_splits = [doc for doc in all_splits if doc.page_content and isinstance(doc.page_content, str) and len(doc.page_content.strip()) > 0]
+        print(f"Filtered to {len(valid_splits)} valid sub-documents")
 
-    print(f"Total sub-documents created: {len(all_splits)}")
-    return retriever
+        embedding_model = GoogleGenerativeAIEmbeddings(google_api_key=GOOGLE_API_KEY, model="models/embedding-001")
+        vector_store = InMemoryVectorStore(embedding=embedding_model)
+        
+        # Process documents in batches to avoid rate limits
+        batch_size = 50
+        for i in range(0, len(valid_splits), batch_size):
+            batch = valid_splits[i:i + batch_size]
+            vector_store.add_documents(documents=batch)
+            time.sleep(1)  # Avoid rate limits
+
+        retriever = vector_store.as_retriever()
+        print(f"Total sub-documents created: {len(valid_splits)}")
+        return retriever
+    except GoogleGenerativeAIError as e:
+        print(f"Google API error: {str(e)}")
+        st.error(f"Failed to process documents due to Google API error: {str(e)}")
+        raise
+    except Exception as e:
+        print(f"Unexpected error in document processing: {str(e)}")
+        st.error(f"Unexpected error in document processing: {str(e)}")
+        raise
 
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
@@ -221,7 +245,11 @@ st.title("SIMATS Chatbot")
 st.write("Your guide to Saveetha Institute of Medical and Technical Sciences")
 
 # Load documents
-retriever = load_and_process_documents()
+try:
+    retriever = load_and_process_documents()
+except Exception as e:
+    st.error(f"Failed to initialize chatbot: {str(e)}")
+    st.stop()
 
 # Initialize session state
 if "messages" not in st.session_state:
