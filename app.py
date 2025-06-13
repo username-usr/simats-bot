@@ -22,8 +22,8 @@ import glob
 import time
 
 # --- API Keys ---
-GROQ_API_KEY = "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" # Replace with your actual key or use st.secrets
-GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYXidBVg" # Replace with your actual key or use st.secrets
+GROQ_API_KEY = "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"  # Replace with your actual key
+GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYXidBVg"  # Replace with your actual key
 
 # --- OCR and LLM Setup ---
 reader = easyocr.Reader(['en'])
@@ -65,7 +65,7 @@ class WebLoaderWithImageOCR(WebBaseLoader):
     def __init__(self, web_paths, *args, **kwargs):
         super().__init__(web_paths, *args, **kwargs)
         self.ocr_reader = reader
-        self.requests_kwargs = {"headers": {"User-Agent": "SIMATS-Chatbot/1.0 (Contact: testingpurposebuddy@gmail.com)"}}
+        self.requests_kwargs = {"headers": {"User-Agent": "SIMATS-Chatbot/1.0 (Contact: testingpurposebuddy@gmail.com)"}} 
 
     def _check_if_image(self, url, content_type=None):
         if content_type:
@@ -116,11 +116,8 @@ class WebLoaderWithImageOCR(WebBaseLoader):
 
 PDF_FOLDER = "data/pdfs"
 
-@st.cache_resource(show_spinner=False) # Suppress default Streamlit spinner
+@st.cache_resource
 def load_and_process_documents():
-    # Simulate loading delay for demonstration of custom loader
-    time.sleep(2)
-
     if not os.path.exists(PDF_FOLDER):
         os.makedirs(PDF_FOLDER)
         print(f"Created folder: {PDF_FOLDER}. Please add PDF files to this folder.")
@@ -219,398 +216,22 @@ def get_college_info_sync(question, retriever):
     loop.close()
     return result
 
-def typewriter_effect(text, placeholder):
-    """Create a typewriter effect for text"""
-    displayed_text = ""
-    for char in text:
-        displayed_text += char
-        placeholder.markdown(displayed_text + "▌")
-        time.sleep(0.02)  # Adjust speed as needed
-    placeholder.markdown(displayed_text)
-
 # --- Streamlit App Setup ---
-st.set_page_config(
-    page_title="SIMATS Chatbot",
-    page_icon="🎓", # Using an emoji here as direct icon integration can be complex without FontAwesome
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+st.title("SIMATS Chatbot")
+st.write("Your guide to Saveetha Institute of Medical and Technical Sciences")
 
-# --- Custom CSS for Dark Blue & Milk White, Glassmorphism, and Loading Screen ---
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-    
-    html, body, [data-testid="stApp"] {
-        background: #1A202C; /* Dark Blue Background */
-        min-height: 100vh;
-        font-family: 'Inter', sans-serif;
-        overflow-x: hidden;
-    }
-    
-    [data-testid="stAppViewContainer"] {
-        background: rgba(255, 255, 255, 0.05); /* Slightly transparent white for glassmorphism */
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        max-width: 100vw;
-        margin: 0;
-        padding: 0;
-        min-height: 100vh;
-    }
-    
-    /* Header Styling */
-    .main-header {
-        background: linear-gradient(135deg, #2A3B4C, #1A202C); /* Darker blue gradient */
-        backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 20px 30px;
-        text-align: center;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    }
-    
-    .header-title {
-        color: #F8F8F8; /* Milk White */
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 0;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-    
-    .header-subtitle {
-        color: rgba(248, 248, 248, 0.8); /* Slightly transparent Milk White */
-        font-size: 1.1rem;
-        margin-top: 5px;
-        font-weight: 400;
-    }
-    
-    /* Chat Container */
-    .chat-container {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 20px;
-        height: calc(100vh - 120px);
-        overflow-y: auto;
-    }
-    
-    /* Message Styling */
-    .stChatMessage {
-        padding: 16px 20px !important;
-        margin: 12px 0 !important;
-        border-radius: 18px !important;
-        max-width: 85% !important;
-        word-wrap: break-word !important;
-        font-size: 16px !important;
-        line-height: 1.5 !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-        animation: slideIn 0.3s ease-out !important;
-        backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    
-    [data-testid="chat-message-user"] {
-        background: linear-gradient(135deg, #364F6B, #2A3B4C) !important; /* Dark Blue Shades */
-        color: #F8F8F8 !important; /* Milk White */
-        margin-left: auto !important;
-        margin-right: 0 !important;
-        border-radius: 18px 18px 4px 18px !important;
-    }
-    
-    [data-testid="chat-message-assistant"] {
-        background: #F8F8F8 !important; /* Milk White */
-        color: #1A202C !important; /* Dark Blue */
-        margin-left: 0 !important;
-        margin-right: auto !important;
-        border-radius: 18px 18px 18px 4px !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
-    }
-    
-    /* Input Styling */
-    .stChatInputContainer {
-        background: rgba(255, 255, 255, 0.05) !important; /* Transparent white */
-        backdrop-filter: blur(20px) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-        padding: 20px !important;
-        position: sticky !important;
-        bottom: 0 !important;
-        z-index: 100 !important;
-    }
-    
-    .stChatInput > div {
-        background: #F8F8F8 !important; /* Milk White */
-        border-radius: 25px !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
-        backdrop-filter: blur(10px) !important;
-    }
-    
-    .stChatInput input {
-        background: transparent !important;
-        border: none !important;
-        color: #1A202C !important; /* Dark Blue */
-        font-size: 16px !important;
-        padding: 12px 20px !important;
-        font-weight: 400 !important;
-    }
-    
-    .stChatInput input::placeholder {
-        color: #4A5568 !important; /* A slightly lighter dark blue */
-        opacity: 0.8 !important;
-    }
-    
-    /* Custom Loading Overlay */
-    #custom-loader-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #1A202C 0%, #2A3B4C 100%); /* Dark blue gradient */
-        display: flex; /* Ensure flexbox for centering */
-        justify-content: center;
-        align-items: center;
-        flex-direction: column; /* Stack spinner and text vertically */
-        gap: 15px; /* Space between spinner and text */
-        z-index: 9999;
-        animation: fadeIn 0.5s ease-out;
-    }
-    
-    #custom-loader-overlay.fade-out {
-        animation: fadeOut 0.5s ease-in forwards;
-    }
-    
-    .loader-text {
-        font-size: 2rem;
-        font-weight: 600;
-        color: #F8F8F8; /* Milk White */
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        opacity: 0;
-        animation: textFadeIn 1s ease-in-out forwards;
-        animation-delay: 0.2s;
-    }
-
-    .loader-spinner {
-        border: 4px solid rgba(248, 248, 248, 0.3); /* Milk White transparent */
-        border-top: 4px solid #F8F8F8; /* Milk White solid */
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite; /* This line was crucial */
-        /* margin-right: 15px; Removed as flex-direction column with gap is better */
-        opacity: 0;
-        animation: fadeIn 0.5s ease-out forwards;
-        animation-delay: 0.1s;
-    }
-    
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    
-    @keyframes fadeOut {
-        from { opacity: 1; }
-        to { opacity: 0; display: none; }
-    }
-
-    @keyframes textFadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Animations for chat messages */
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
-    }
-    
-    .typing-indicator {
-        animation: pulse 1.5s infinite;
-    }
-    
-    /* Welcome Message Styling */
-    .welcome-message {
-        background: #F8F8F8; /* Milk White */
-        border-radius: 18px;
-        padding: 24px;
-        margin: 20px auto;
-        max-width: 80%;
-        text-align: center;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        animation: slideIn 0.8s ease-out;
-        color: #1A202C; /* Dark Blue text */
-    }
-    
-    .welcome-title {
-        color: #1A202C; /* Dark Blue */
-        font-size: 1.8rem;
-        font-weight: 600;
-        margin-bottom: 12px;
-    }
-    
-    .welcome-text {
-        color: #4A5568; /* Slightly lighter dark blue */
-        font-size: 1.1rem;
-        line-height: 1.6;
-        margin-bottom: 16px;
-    }
-    
-    .quick-questions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        justify-content: center;
-        margin-top: 16px;
-    }
-    
-    .quick-question-btn {
-        background: rgba(42, 59, 76, 0.1); /* Transparent dark blue */
-        border: 1px solid rgba(42, 59, 76, 0.3);
-        color: #1A202C; /* Dark Blue */
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-    }
-    
-    .quick-question-btn:hover {
-        background: rgba(42, 59, 76, 0.2);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-    
-    /* Mobile Responsiveness */
-    @media (max-width: 768px) {
-        .header-title {
-            font-size: 2rem;
-        }
-        
-        .chat-container {
-            padding: 10px;
-        }
-        
-        .stChatMessage {
-            max-width: 95% !important;
-            font-size: 14px !important;
-        }
-        
-        .welcome-message {
-            max-width: 95%;
-            padding: 20px;
-        }
-        
-        .welcome-title {
-            font-size: 1.5rem;
-        }
-        
-        .welcome-text {
-            font-size: 1rem;
-        }
-    }
-    
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    </style>
-""", unsafe_allow_html=True)
-
-# Custom header
-st.markdown("""
-    <div class="main-header">
-        <h1 class="header-title">SIMATS Assistant</h1>
-        <p class="header-subtitle">Your intelligent guide to Saveetha Institute of Medical and Technical Sciences</p>
-    </div>
-""", unsafe_allow_html=True)
+# Load documents
+retriever = load_and_process_documents()
 
 # Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.first_visit = True
 
-# --- Custom Loading Screen ---
-# This div will be shown initially and then hidden via JavaScript
-st.markdown("""
-    <div id="custom-loader-overlay">
-        <div class="loader-spinner"></div>
-        <div class="loader-text">Loading SIMATS data...</div>
-    </div>
-""", unsafe_allow_html=True)
-
-# Load documents with custom loader message
-retriever = load_and_process_documents()
-
-# JavaScript to hide the loading overlay after data is loaded
-st.markdown("""
-    <script>
-        const loader = document.getElementById('custom-loader-overlay');
-        if (loader) {
-            loader.classList.add('fade-out');
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 500); // Match fadeOut animation duration
-        }
-    </script>
-""", unsafe_allow_html=True)
-
-
-# Display welcome message only on first visit and add to chat history
+# Display welcome message on first visit
 if st.session_state.first_visit:
-    st.markdown("""
-        <div class="welcome-message">
-            <h2 class="welcome-title">👋 Welcome to SIMATS!</h2>
-            <p class="welcome-text">
-                I'm here to help you discover everything about Saveetha Institute of Medical and Technical Sciences. 
-                From admissions and courses to campus life and placements - just ask me anything!
-            </p>
-            <div class="quick-questions">
-                <span class="quick-question-btn">What courses are offered?</span>
-                <span class="quick-question-btn">Tell me about campus facilities</span>
-                <span class="quick-question-btn">Placement opportunities</span>
-                <span class="quick-question-btn">Admission process</span>
-                <span class="quick-question-btn">College rankings</span>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    welcome_msg_content = """Hi there! I'm your SIMATS Assistant, and I'm excited to help you explore everything about our college! Whether you're curious about:
-
-* **Academic programs** and specializations
-* **Campus facilities** and infrastructure  
-* **Placement opportunities** and career support
-* **Admission requirements** and procedures
-* **Rankings and accreditations**
-* **Research opportunities** and projects
-* **Hostel life** and campus culture
-
-Just ask me anything! I'm here to give you detailed, friendly answers about SIMATS. What would you like to know first?"""
-    
-    st.session_state.messages.append({"role": "assistant", "content": welcome_msg_content})
+    welcome_msg = """Hi there! I'm your SIMATS Assistant, and I'm here to help you explore everything about Saveetha Institute of Medical and Technical Sciences. Ask about academic programs, campus facilities, placements, admissions, or anything else you're curious about! What would you like to know?"""
+    st.session_state.messages.append({"role": "assistant", "content": welcome_msg})
     st.session_state.first_visit = False
 
 # Display chat messages
@@ -619,7 +240,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Chat input
-if prompt := st.chat_input("Ask me anything about SIMATS..."):
+if prompt := st.chat_input("Ask about SIMATS..."):
     # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -627,13 +248,7 @@ if prompt := st.chat_input("Ask me anything about SIMATS..."):
 
     # Generate and display assistant response
     with st.chat_message("assistant"):
-        # We removed the st.spinner and replaced it with a custom CSS loading effect
-        response_placeholder = st.empty() # Placeholder for typewriter effect
-        response_placeholder.markdown("<div class='typing-indicator'>Thinking...</div>", unsafe_allow_html=True) # Show thinking indicator
-        
-        response = get_college_info_sync(prompt, retriever)
-        
-        # Add typing effect
-        typewriter_effect(response, response_placeholder)
-            
+        with st.spinner("Fetching answer..."):
+            response = get_college_info_sync(prompt, retriever)
+            st.markdown(response)
     st.session_state.messages.append({"role": "assistant", "content": response})
