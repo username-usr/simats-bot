@@ -52,7 +52,7 @@ chat_template = ChatPromptTemplate.from_messages([
 **Question**: {question}
 
 **Task**: Craft a response that:
-1. Starts with a **hook** (e.g., "Great question!" or "Let's break this down...").
+1. Starts with a **hook**.
 2. Answers *all* parts of the question with **blended context** (no copy-paste).
 3. Uses **examples** (e.g., "For instance, last year a student...").
 4. Ends with a helpful note or suggestion.
