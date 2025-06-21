@@ -21,7 +21,7 @@ import glob
 import time
 
 # --- API Keys ---
-GROQ_API_KEY = "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"
+GROQ_API_KEY = "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"
 GOOGLE_API_KEY = "AIzaSyB5dlbtndihCliWB1GCXoZJaTwVYdXiBVg"  # Replace with your valid Google API key
 
 # --- OCR and LLM Setup ---
